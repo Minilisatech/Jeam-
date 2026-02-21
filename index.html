@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jeam Mobile's - Corporate Repair System</title>
+
+<link rel="manifest" href="manifest.json">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI, sans-serif;
+background:#f1f5f9;
+}
+header{
+background:#0f172a;
+color:white;
+padding:15px;
+display:flex;
+justify-content:space-between;
+}
+.container{
+padding:20px;
+}
+.card{
+background:white;
+padding:20px;
+border-radius:8px;
+margin-bottom:20px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+input,select,textarea{
+width:100%;
+padding:8px;
+margin:6px 0;
+}
+button{
+background:#0f172a;
+color:white;
+border:none;
+padding:8px 12px;
+cursor:pointer;
+}
+table{
+width:100%;
+border-collapse:collapse;
+}
+th,td{
+border:1px solid #ddd;
+padding:8px;
+text-align:center;
+}
+th{
+background:#e2e8f0;
+}
+</style>
+</head>
+<body>
+
+<header>
+<h2>JEAM MOBILE'S CORPORATE SYSTEM</h2>
+<button onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+<div id="login" class="card">
+<h3>Admin Login</h3>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+</div>
+
+<div id="dashboard" style="display:none">
+
+<div class="card">
+<h3>Business Overview</h3>
+<p>Total Jobs: <span id="totalJobs"></span></p>
+<p>Total Revenue: ₦<span id="totalRevenue"></span></p>
+<canvas id="revenueChart"></canvas>
+</div>
+
+<div class="card">
+<h3>Register Repair</h3>
+<input id="name" placeholder="Customer Name">
+<input id="phone" placeholder="Phone Number">
+<input id="model" placeholder="Phone Model">
+<input id="color" placeholder="Phone Color">
+<textarea id="problem" placeholder="Problem"></textarea>
+<input id="price" type="number" placeholder="Price">
+
+<select id="status">
+<option>Pending</option>
+<option>In Progress</option>
+<option>Fixed</option>
+<option>Collected</option>
+</select>
+
+<label>Photo</label>
+<input type="file" id="photo" accept="image/*">
+<label>Video</label>
+<input type="file" id="video" accept="video/*">
+
+<button onclick="saveJob()">Save Job</button>
+</div>
+
+<div class="card">
+<h3>Repair Records</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Phone</th>
+<th>Status</th>
+<th>Price</th>
+<th>Invoice</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+</div>
+
+</div>
+</div>
+
+<script>
+let jobs = JSON.parse(localStorage.getItem("jobs")) || [];
+
+function login(){
+if(email.value && password.value){
+login.style.display="none";
+dashboard.style.display="block";
+updateDashboard();
+renderTable();
+}
+}
+
+function logout(){
+location.reload();
+}
+
+function saveJob(){
+let job={
+name:name.value,
+phone:phone.value,
+model:model.value,
+color:color.value,
+problem:problem.value,
+price:price.value,
+status:status.value
+};
+jobs.push(job);
+localStorage.setItem("jobs",JSON.stringify(jobs));
+updateDashboard();
+renderTable();
+}
+
+function updateDashboard(){
+totalJobs.innerText=jobs.length;
+let revenue=jobs.reduce((a,b)=>a+Number(b.price),0);
+totalRevenue.innerText=revenue;
+
+new Chart(document.getElementById("revenueChart"),{
+type:'bar',
+data:{
+labels:["Revenue"],
+datasets:[{label:"Total Revenue",data:[revenue]}]
+}
+});
+}
+
+function renderTable(){
+tableBody.innerHTML="";
+jobs.forEach((j,i)=>{
+tableBody.innerHTML+=`
+<tr>
+<td>${j.name}</td>
+<td>${j.phone}</td>
+<td>${j.status}</td>
+<td>₦${j.price}</td>
+<td><button onclick="generateInvoice(${i})">Invoice</button></td>
+</tr>`;
+});
+}
+
+function generateInvoice(index){
+const { jsPDF } = window.jspdf;
+let doc=new jsPDF();
+let j=jobs[index];
+
+doc.setFontSize(18);
+doc.text("JEAM MOBILE'S",20,20);
+doc.setFontSize(12);
+doc.text("Corporate Repair Invoice",20,30);
+
+doc.text("Customer: "+j.name,20,50);
+doc.text("Phone: "+j.phone,20,60);
+doc.text("Model: "+j.model,20,70);
+doc.text("Color: "+j.color,20,80);
+doc.text("Problem: "+j.problem,20,90);
+doc.text("Status: "+j.status,20,100);
+doc.text("Amount: ₦"+j.price,20,110);
+
+doc.text("Signature: ____________________",20,140);
+
+doc.save("Invoice.pdf");
+}
+
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+
+</body>
+</html>
